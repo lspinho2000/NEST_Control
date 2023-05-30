@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<launch>
+
+<include file="$(find zarco_sim)/launch/zarco_sim.launch" />
+
+<param name="robot_description" command="$(find xacro)/xacro --inorder '$(find zarco_sim)/urdf/nest_description.xacro'"/>
+
+<!-- Spawn My Robot -->
+<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+      args="-urdf -param robot_description -model nest
+            -x 0 -y 0 -z 0
+            -R 0 -P 0 -Y 0
+            -reference_frame iris::base_link"/>
+
+<node pkg="nest_control" name="sim_vehicle" type="nest_launch.sh"/>
+
+<!--include file="$(find mavros)/launch/apm.launch">
+    <param name="fcu_url" value="udp://:14445@"/>
+</include-->
+
+<!--node pkg="rosservice" type="rosservice" name="mode_guided" args="call wait /mavros/cmd/arming" /-->
+
+<node pkg="nest_control" name="mavros_launch" type="nest_mavros.sh"/>
+
+<!--node pkg="rosservice" type="rosservice" name="mode_guided" args="call wait ack timeout /mavros/cmd/arming True" />
+
+<node pkg="rosservice" type="rosservice" name="takeoff" args="call wait /mavros/cmd/takeoff" /-->
+
+<!--node pkg="nest_control" name="nest_control" type="nest_control.cpp" output="screen" /-->
+
+
+
+</launch>

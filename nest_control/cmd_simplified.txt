@@ -1,0 +1,40 @@
+roscore
+
+# Gazebo Simulator
+roslaunch zarco_sim zarco_sim.launch
+
+# Control Zarco with Keyboard
+rosrun teleop_twist_keyboard_cpp teleop_twist_keyboard
+
+# Drone Simulator - Iris
+catkin_ws/src/ardupilot/Tools/autotest/sim_vehicle.py -v ArduCopter -f gazebo-iris -L FADEUP --console --map
+
+# MavLink\Mavros Communication
+roslaunch mavros apm.launch fcu_url:=udp://:14550@
+
+# Control Drone with Keyboard 
+roslaunch mavros_extras kbteleop.launch			# Iris
+mode Guided: G
+arm: a
+takeoff: t
+return to home: h
+land: l
+GOTO: g
+
+# Record Bags
+rosbag record -b 3072 --size=700 --split -O nome_do_bag -e '(.*)mavros(.*)' /rtsp2/image_raw/compressed /rtsp2/camera_info
+
+# Change Location on Gazebo
+catkin_ws/src/ardupilot/Tools/autotest/locations.txt
+
+# RESET BATTERY SIMULATOR
+rosservice call /mavros/cmd/command "{broadcast: false, command: 42651, confirmation: 0, param1: -1.0, param2: 100.0, param3: 0.0, param4: 0.0, param5: 0.0, param6: 0.0, param7: 0.0}"
+
+
+# Zarco Topics:
+Local Pose and velocity - /fw_asv0/p3d_odom
+(velocity: tf world to tf base_footprint)
+
+# Drone Topics:
+Local Pose and velocity - /mavros/local_position/odom
+Velocity commands - /mavros/setpoint_velocity/cmd_vel
