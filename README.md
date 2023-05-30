@@ -24,6 +24,7 @@ catkin_ws/src/ardupilot/Tools/autotest/sim_vehicle.py -v ArduCopter -f gazebo-ir
 cd catkin_ws
 ./QGroundControl.AppImage
 ```
+Arm and takeoff the NEST
 
 ### Run NEST platform simulation
 ```bash
