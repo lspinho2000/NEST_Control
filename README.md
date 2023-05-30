@@ -2,10 +2,12 @@
 Code for the control and simulation aspect of the NEST platform for the ATLANTIS project
 
 
-------------------------------------------Guide to run the program-----------------------------------------
+## Guide to run the program
 
---------------------------------------------Gazebo Simulator-----------------------------------------------
+### Gazebo Simulator
+```bash
 roslaunch nest_control nest_launch.launch
+```
 
 --------------------------------------------Control zarco with keyboard------------------------------------
 rosrun teleop_twist_keyboard_cpp teleop_twist_keyboard
