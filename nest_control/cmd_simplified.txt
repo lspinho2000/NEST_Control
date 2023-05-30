@@ -1,7 +1,7 @@
 roscore
 
 # Gazebo Simulator
-roslaunch nest_control nest_control.launch
+roslaunch nest_control nest_launch.launch
 
 # Control Zarco with Keyboard
 rosrun teleop_twist_keyboard_cpp teleop_twist_keyboard
