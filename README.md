@@ -8,17 +8,17 @@ Code for the control and simulation aspect of the NEST platform for the ATLANTIS
 ```bash
 roslaunch nest_control nest_launch.launch
 ```
-
+In a separate terminal run: 
 ### Control zarco with keyboard
 ```bash
 rosrun teleop_twist_keyboard_cpp teleop_twist_keyboard
 ```
-
+In another terminal run:
 ### Drone Simulator - IRIS
 ```bash
 catkin_ws/src/ardupilot/Tools/autotest/sim_vehicle.py -v ArduCopter -f gazebo-iris -L FADEUP --console --map
 ```
-
+In any terminal:
 ### Run QGroundControl
 ```bash
 cd catkin_ws
@@ -26,10 +26,17 @@ cd catkin_ws
 ```
 Arm and takeoff the NEST
 
+In another terminal:
 ### Run NEST platform simulation
 ```bash
 rosrun nest_control nest_spawn
 ```
+Create another terminal and run this code:
+```bash
+roslaunch mavros_extras kbteleop.launch
+```
+Click in number 0 on the numpad until the NEST reaches the water.
+
 
 ### Run Follow node 
 ```bash
