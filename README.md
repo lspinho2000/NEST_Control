@@ -2,25 +2,25 @@
 Code for the control and simulation aspect of the NEST platform for the ATLANTIS project
 
 
-#Guide to run the program
+------------------------------------------Guide to run the program-----------------------------------------
 
-# Gazebo Simulator
+--------------------------------------------Gazebo Simulator-----------------------------------------------
 roslaunch nest_control nest_launch.launch
 
-# Control Zarco with Keyboard
+--------------------------------------------Control zarco with keyboard------------------------------------
 rosrun teleop_twist_keyboard_cpp teleop_twist_keyboard
 
-# Drone Simulator - Iris
+--------------------------------------------Drone Simulator - IRIS------------------------------------------
 catkin_ws/src/ardupilot/Tools/autotest/sim_vehicle.py -v ArduCopter -f gazebo-iris -L FADEUP --console --map
 
-#Run QGroundControl 
+--------------------------------------------Run QGroundControl----------------------------------------------
 cd catkin_ws
 ./QGroundControl.AppImage
 
-#Run NEST platform simulation
+-------------------------------------------Run NEST platform simulation--------------------------------------
 rosrun nest_control nest_spawn
 
-#Run Follow node 
+-------------------------------------------Run Follow node ---------------------------------------------------
 rosrun nest_control nest_control
 
 # RESET BATTERY SIMULATOR (IN CASE THEY RUN OUT)
