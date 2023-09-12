@@ -8,6 +8,7 @@
 #include <tf/tf.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
+#include <mavros_msgs/RCIn.h>
 #include <cmath>
 //#include "pid.h"
 #include "nest_func.hpp"
@@ -17,12 +18,29 @@
 
 #define pi 3.1415926535921
 
-//bool armed;
+PID pid_x;
+PID pid_y;
+
+Button Button_press_loiter;
+Button Button_press_vessel;
+
 
 ros::Publisher drone_vel;
 ros::Publisher follow_point;
 
 geometry_msgs::Pose point_foll;
+
+std::string state;
+bool flag_loiter = false;
+bool flag_vessel = false;
+
+bool button_loiter = false;
+bool button_vessel = false;
+
+
+void cb_state(const mavros_msgs::State::ConstPtr &msg){
+    state = msg->mode;
+}
 
 
 geometry_msgs::Pose zarco_point(const nav_msgs::OdometryConstPtr &msg, double yaw, double x, double y){  //Function that defines a point to be followed that will be shown in world frame
@@ -75,62 +93,117 @@ void zarco_speed(const nav_msgs::OdometryConstPtr &msg)
 }
 
 
-void drone_cb(const nav_msgs::OdometryConstPtr &msg){
+void vessel_following(const nav_msgs::OdometryConstPtr &msg){
 
-  double tmp_x,tmp_y;
-  tmp_x = msg->pose.pose.position.y;
-  tmp_y = -(msg->pose.pose.position.x);
-
-  double result_pid_x, result_pid_y;
-  PID pid_x;
-  pid_x.kp = kp_x;
-  pid_x.ki = ki_x;
-  pid_x.kd = kd_x;
-  result_pid_x = pid_x.calculate(point_foll.position.x,tmp_x);
-
-  PID pid_y;
-  pid_y.kp = kp_y;
-  pid_y.kd = kd_y;
-  pid_y.ki = ki_y;
-  result_pid_y = pid_y.calculate(point_foll.position.y, tmp_y);
-
-
-
-  double yaw;
-  yaw = tf::getYaw(msg->pose.pose.orientation) - pi/2;
-
-  yaw = NormalizeAngle(yaw);
-
-
-  double yaw_zarco;
-  yaw_zarco = tf::getYaw(point_foll.orientation);
-
-
- double angle = atan2(sin(yaw_zarco), cos(yaw_zarco)) - atan2(sin(yaw), cos(yaw));
-
- angle = NormalizeAngle(angle);
-
-
-  geometry_msgs::Twist drone_msg;
-
-  if(abs(result_pid_x) < 0.01){
-    result_pid_x = 0;
+  if(state == "GUIDED" && button_vessel){
+        flag_vessel = true;
+  }else{
+        flag_vessel = false;
   }
-  if(abs(result_pid_y) < 0.01){
-    result_pid_y = 0;
-  }
+    
+    
+  if(flag_vessel){
+    double tmp_x,tmp_y;
+    tmp_x = msg->pose.pose.position.y;
+    tmp_y = -(msg->pose.pose.position.x);
 
-  drone_msg.linear.x = result_pid_x * cos(yaw) + result_pid_y * sin(yaw);
-  drone_msg.linear.y = result_pid_x * (-sin(yaw)) + result_pid_y * cos(yaw);
-  drone_msg.angular.z = angle;
-
-  drone_pub(drone_msg);
-
-
-
-  ROS_WARN_STREAM("Resultado do PID em X: " << result_pid_x << "Resultado do PID em Y: " << result_pid_y);
+    double result_pid_x, result_pid_y;
+    result_pid_x = pid_x.calculate(point_foll.position.x,tmp_x);
+    result_pid_y = pid_y.calculate(point_foll.position.y, tmp_y);
 
 
+
+      double yaw;
+    yaw = tf::getYaw(msg->pose.pose.orientation) - pi/2;
+
+      yaw = NormalizeAngle(yaw);
+
+
+      double yaw_zarco;
+      yaw_zarco = tf::getYaw(point_foll.orientation);
+
+
+     double angle = atan2(sin(yaw_zarco), cos(yaw_zarco)) - atan2(sin(yaw), cos(yaw));
+
+     angle = NormalizeAngle(angle);
+
+
+      geometry_msgs::Twist drone_msg;
+
+      if(abs(result_pid_x) < 1){
+        result_pid_x = 0;
+      }
+      if(abs(result_pid_y) < 1){
+        result_pid_y = 0;
+      }
+
+      drone_msg.linear.x = result_pid_x * cos(yaw) + result_pid_y * sin(yaw);
+      drone_msg.linear.y = result_pid_x * (-sin(yaw)) + result_pid_y * cos(yaw);
+      drone_msg.angular.z = angle;
+
+      drone_pub(drone_msg);
+
+
+
+      ROS_WARN_STREAM("Resultado do PID em X: " << result_pid_x << "Resultado do PID em Y: " << result_pid_y);
+    }
+
+}
+
+
+void NEST_loiter(const geometry_msgs::PoseStamped::ConstPtr &msg){
+    geometry_msgs::PoseStamped loiter_point;
+    geometry_msgs::Twist NEST_speed;
+    
+    double angle, yaw, yaw_curr;
+    double result_pidX, result_pidY;
+    
+    
+    if(state == "GUIDED" && !button_vessel && button_loiter){
+        flag_loiter = true;
+    }else{
+        loiter_point.pose.position = msg->pose.position;
+        loiter_point.pose.orientation = msg->pose.orientation; 
+        flag_loiter = false;
+    }
+    
+    if(flag_loiter){
+        result_pidX = pid_x.calculate(loiter_point.pose.position.x,msg->pose.position.x);
+        result_pidY = pid_y.calculate(loiter_point.pose.position.y,msg->pose.position.y);
+        yaw_curr = tf::getYaw(msg->pose.orientation);
+        yaw_curr = NormalizeAngle(yaw_curr);
+        yaw = tf::getYaw(loiter_point.pose.orientation);
+        yaw = NormalizeAngle(yaw);
+        
+        if(abs(result_pidX) <  1){
+            result_pidX = 0;
+        }
+        if(abs(result_pidY) < 1){
+            result_pidY = 0;
+        }
+        
+        angle = atan2(sin(yaw),cos(yaw)) - atan2(sin(yaw_curr),cos(yaw_curr));
+        angle = NormalizeAngle(angle);
+        
+        NEST_speed.linear.x = result_pidX;
+        NEST_speed.linear.y = result_pidY;
+        NEST_speed.angular.z = 0.5*angle;
+        
+        drone_pub(NEST_speed);
+        
+        ROS_WARN_STREAM("Linear Speed (X)  = " << result_pidX << "Linear speed (Y) = " << result_pidY);
+        ROS_WARN_STREAM("Angular Speed (yaw) = " << angle);
+        ROS_WARN_STREAM(" Difference : " << "X = Curr/Des : " << msg->pose.position.x << loiter_point.pose.position.x << "Y = Curr/Des : " << msg->pose.position.y << loiter_point.pose.position.y);
+    }
+}
+
+void cb_button(const mavros_msgs::RCIn::ConstPtr &msg){
+    button_loiter = Button_press_loiter.ButtonActive(msg);
+    std::string result_loiter = button_loiter ? "YES" : "NO";
+    ROS_INFO_STREAM("LOITER BUTTON ACTIVE? " << result_loiter);
+    button_vessel = Button_press_vessel.ButtonActive(msg); 
+    std::string result_vessel = button_vessel ? "YES" : "NO";
+    ROS_INFO_STREAM("VESSEL BUTTON ACTIVE? " << result_vessel);
 }
 
 int main(int argc, char **argv){
@@ -143,7 +216,31 @@ int main(int argc, char **argv){
 
   follow_point = nh.advertise<geometry_msgs::Pose>("/fw_asv0/follow_point",1);
 
-  ros::Subscriber sub_drone = n.subscribe("/mavros/local_position/odom",1,drone_cb);
+  ros::Subscriber sub_drone = n.subscribe("/mavros/local_position/odom",1,vessel_following);
+  
+  ros::Subscriber sub_realpos_NEST = n.subscribe("/mavros_nest/local_position/pose",1,NEST_loiter);
+  ros::Subscriber sub_mode_NEST = n.subscribe("/mavros_nest/state",1,cb_state);
+  
+  ros::Subscriber sub_button = n.subscribe("/mavros_nest/rc/in",1,cb_button);
+  
+  
+  Button_press_loiter.min_value = 1100;
+  Button_press_loiter.max_value = 1920;
+  Button_press_loiter.channel = 11;
+  
+  Button_press_vessel.min_value = 1100;
+  Button_press_vessel.max_value = 1920;
+  Button_press_vessel.channel = 10;
+  
+  
+  pid_x.kp = kd_x;
+  pid_x.ki = ki_x;
+  pid_x.kd = kd_x;
+  
+  pid_x.kp = kd_x;
+  pid_x.ki = ki_x;
+  pid_x.kd = kd_x;
+
 
 
   ros::spin();
