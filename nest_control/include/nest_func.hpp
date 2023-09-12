@@ -13,6 +13,7 @@
 #include <mavros_msgs/State.h>
 #include <cmath>
 #include <geometry_msgs/Pose.h>
+#include <mavros_msgs/RCIn.h>
 
 
 #define pi 3.1415926535921
@@ -77,8 +78,27 @@ double NormalizeAngle(double yaw){
   }
 
   return yaw;
-}
+};
 
+
+class Button{
+public:
+    double min_value,max_value;
+    int channel;
+    bool ButtonActive(const mavros_msgs::RCIn::ConstPtr &msg){
+      if(msg->channels.size() != 0){
+          if(msg->channels[channel - 1] < max_value){
+              return false;
+            }else if(msg->channels[channel - 1] > min_value){
+              return true;
+            }
+        
+      }else{
+        ROS_ERROR_STREAM("RC NOT CONNECTED!");
+      }
+      return false;
+    }
+};
 
 //  mavros_msgs::SetMode srv;
 //  ros::ServiceClient client = nh.serviceClient<const mavros_msgs::SetMode>("/mavros/set_mode");
